@@ -5,6 +5,7 @@ package plan
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -936,5 +937,152 @@ func TestDeleteImpact(t *testing.T) {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in %s", want, got)
 		}
+	}
+}
+
+// ─── same-filament backup trays ──────────────────────────────────────────────
+
+// twinFixture makes AMS slot 3 a second tray of the same black PLA Matte as
+// slot 1. Spool 9 sits in slot 1 and spool 8 in slot 3.
+func twinFixture(t *testing.T, slot1G, slot3G float64) PreflightInput {
+	t.Helper()
+	in := idleFixture(t)
+	_, views, _ := fixtures(t)
+	tr := in.Status.AMS[0].Trays
+	tr[3].Color, tr[3].SubBrand = "000000FF", "PLA Matte"
+	for i := range views {
+		switch views[i].ID {
+		case 9:
+			views[i].RemainingG = slot1G
+		case 8:
+			views[i].RemainingG = slot3G
+		}
+	}
+	in.Lookup = NewLookup(1, load[[]api.SlotAssignment](t, "assignments.json"), views)
+	in.Needs = []Need{{SlotID: 1, Type: "PLA", Color: "#000000", Grams: 146}}
+	return in
+}
+
+func TestPreflightBackupTrayCoversAShortSpool(t *testing.T) {
+	tests := []struct {
+		name         string
+		slot1G       float64
+		slot3G       float64
+		mapping      []int
+		edit         func(*PreflightInput)
+		needs        []Need
+		wantAllowed  bool
+		wantMapping  []int
+		wantContains string
+	}{
+		{name: "explicit mapping, 127 g plus 854 g for 146 g", slot1G: 127, slot3G: 854, mapping: []int{1},
+			wantAllowed: true, wantMapping: []int{1}, wantContains: "AMS slot 3 (spool #8, 854 g) holds the same filament, so the AMS has to switch over to it mid-print"},
+		{name: "default mapping picks the 127 g tray", slot1G: 127, slot3G: 854,
+			wantAllowed: true, wantMapping: []int{1}, wantContains: "switch over"},
+		{name: "default mapping picks the nearly empty tray whichever slot it is in", slot1G: 854, slot3G: 127,
+			wantAllowed: true, wantMapping: []int{3}, wantContains: "AMS slot 1 (spool #9, 854 g)"},
+		{name: "group total short beyond 10% is refused", slot1G: 50, slot3G: 60, mapping: []int{1},
+			wantContains: "have 110 g between them but filament slot 1 needs 146 g"},
+		{name: "group total short within 10% only warns", slot1G: 70, slot3G: 70, mapping: []int{1},
+			wantAllowed: true, wantContains: "short by 6 g, within 10%"},
+		{name: "a different colour tray is not counted", slot1G: 127, slot3G: 854, mapping: []int{1},
+			edit:         func(in *PreflightInput) { in.Status.AMS[0].Trays[3].Color = "EC008CFF" },
+			wantContains: "has 127 g but filament slot 1 needs 146 g"},
+		{name: "a different product line is not counted", slot1G: 127, slot3G: 854, mapping: []int{1},
+			edit:         func(in *PreflightInput) { in.Status.AMS[0].Trays[3].SubBrand = "PLA Basic" },
+			wantContains: "has 127 g but filament slot 1 needs 146 g"},
+		{name: "a different vendor is not counted", slot1G: 127, slot3G: 854, mapping: []int{1},
+			edit: func(in *PreflightInput) {
+				_, views, _ := fixtures(t)
+				for i := range views {
+					if views[i].ID == 8 {
+						views[i].Vendor, views[i].RemainingG = "Other Co", 854
+					}
+					if views[i].ID == 9 {
+						views[i].RemainingG = 127
+					}
+				}
+				in.Lookup = NewLookup(1, load[[]api.SlotAssignment](t, "assignments.json"), views)
+			},
+			wantContains: "has 127 g but filament slot 1 needs 146 g"},
+		{name: "two filaments in one group share its grams", slot1G: 127, slot3G: 100, mapping: []int{1, 3},
+			needs:       []Need{{SlotID: 1, Type: "PLA", Color: "000000", Grams: 100}, {SlotID: 2, Type: "PLA", Color: "000000", Grams: 100}},
+			wantAllowed: true, wantContains: "switch over"},
+		{name: "a backup is not counted twice across two filaments", slot1G: 127, slot3G: 40, mapping: []int{1, 3},
+			needs:        []Need{{SlotID: 1, Type: "PLA", Color: "000000", Grams: 100}, {SlotID: 2, Type: "PLA", Color: "000000", Grams: 100}},
+			wantContains: "have 167 g between them but filament slot 2 needs 200 g"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			in := twinFixture(t, tc.slot1G, tc.slot3G)
+			if tc.edit != nil {
+				tc.edit(&in)
+			}
+			if tc.needs != nil {
+				in.Needs = tc.needs
+			}
+			in.Mapping = tc.mapping
+			r := Preflight(in)
+			if r.Allowed != tc.wantAllowed {
+				t.Fatalf("allowed=%v, want %v: %+v", r.Allowed, tc.wantAllowed, r)
+			}
+			if tc.wantMapping != nil && fmt.Sprint(r.AMSMapping) != fmt.Sprint(tc.wantMapping) {
+				t.Fatalf("mapping %v, want %v", r.AMSMapping, tc.wantMapping)
+			}
+			if text := strings.Join(append(r.Warnings, r.Refusals...), "|"); !strings.Contains(text, tc.wantContains) {
+				t.Fatalf("want %q in %s", tc.wantContains, text)
+			}
+		})
+	}
+}
+
+func TestPreflightReportsGroupsAndWhyATrayWasChosen(t *testing.T) {
+	in := twinFixture(t, 127, 854)
+	in.Mapping = nil
+	r := Preflight(in)
+	if len(r.Groups) != 1 || fmt.Sprint(r.Groups[0].Slots) != "[1 3]" || r.Groups[0].TotalG != 981 {
+		t.Fatalf("groups: %+v", r.Groups)
+	}
+	if len(r.MappingReasons) != 1 || !strings.Contains(r.MappingReasons[0], "AMS slots 1, 3 match equally, chose the one with the least filament left (127 g)") {
+		t.Fatalf("reasons: %v", r.MappingReasons)
+	}
+	if sc := r.Slots[0]; fmt.Sprint(sc.BackupSlots) != "[3]" || sc.GroupRemainingG != 981 || sc.LeftAfterG != 835 {
+		t.Fatalf("slot check: %+v", sc)
+	}
+}
+
+func TestAutoMapNeverTreatsAnUnlinkedTrayAsTheNearlyEmptyOne(t *testing.T) {
+	// Slot 3 has no spool link and reads 5% on the AMS; slot 1 is linked.
+	unlink := func(in *PreflightInput, pct, slot1G float64) {
+		_, views, _ := fixtures(t)
+		for i := range views {
+			if views[i].ID == 9 {
+				views[i].RemainingG = slot1G
+			}
+		}
+		in.Lookup = NewLookup(1, []api.SlotAssignment{{PrinterID: 1, AMSID: 0, TrayID: 1, SpoolID: 9}}, views)
+		in.Status.AMS[0].Trays[3].TrayUUID, in.Status.AMS[0].Trays[3].Remain = "", api.Num(pct)
+	}
+	in := twinFixture(t, 854, 127)
+	unlink(&in, 5, 854)
+	in.Mapping = nil
+	r := Preflight(in)
+	if !r.Allowed || fmt.Sprint(r.AMSMapping) != "[1]" {
+		t.Fatalf("the linked tray is the only one with known grams: %+v", r)
+	}
+	if strings.Contains(strings.Join(r.MappingReasons, "|"), "least filament left") {
+		t.Fatalf("an unlinked tray was credited as the nearly empty one: %v", r.MappingReasons)
+	}
+	// With no tray linked at all, the AMS remaining percent decides.
+	m, _ := autoMap([]Need{{SlotID: 1, Type: "PLA", Color: "000000", Grams: 10}}, loadedTrays(in.Status), NewLookup(1, nil, nil))
+	if m[0] != 3 {
+		t.Fatalf("5%% vs 78%% should pick slot 3, got %v", m)
+	}
+	// An unlinked backup adds no grams, so 127 g alone is still short.
+	in = twinFixture(t, 127, 854)
+	unlink(&in, 95, 127)
+	in.Mapping = []int{1}
+	if r := Preflight(in); r.Allowed || !strings.Contains(strings.Join(r.Refusals, "|"), "AMS slot 3 has no linked spool, so its grams are not counted") {
+		t.Fatalf("%+v", r)
 	}
 }

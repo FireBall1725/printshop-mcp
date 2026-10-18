@@ -18,7 +18,7 @@ import (
 
 type printFileArgs struct {
 	LibraryFileID int    `json:"library_file_id" jsonschema:"Library file id from list_library or upload_file. Must be a sliced .gcode.3mf."`
-	AMSMapping    []int  `json:"ams_mapping,omitempty" jsonschema:"AMS slot for each filament in the file: index 0 is the file's filament slot 1. Slots come from printer_status (AMS unit 0 tray 1 is slot 1). Use -1 for an unused filament. If omitted, a tray is chosen per filament from the file's material and colour (loaded trays only, nearest colour) and the choice is returned in the result; pass it to override."`
+	AMSMapping    []int  `json:"ams_mapping,omitempty" jsonschema:"AMS slot for each filament in the file: index 0 is the file's filament slot 1. Slots come from printer_status (AMS unit 0 tray 1 is slot 1). Use -1 for an unused filament. If omitted, a tray is chosen per filament from the file's material and colour (loaded trays only, nearest colour; among trays that match equally, the one with the least filament left, so a nearly empty spool is used up first) and the choice and the reason are returned in the result; pass it to override."`
 	PlateID       int    `json:"plate_id,omitempty" jsonschema:"Plate to print. Defaults to 1."`
 	UseAMS        *bool  `json:"use_ams,omitempty" jsonschema:"Feed from the AMS. Defaults to true. False prints from the external spool and skips the stock check."`
 	BedLevelling  string `json:"bed_levelling,omitempty" jsonschema:"auto, on or off. Defaults to auto."`
@@ -88,8 +88,10 @@ func addPrintTools(srv *mcp.Server, d *Deps) {
 			"Checks first and refuses unless ALL hold: printer state is IDLE or FINISH (the result says what it was doing otherwise); " +
 			"no HMS errors (returned to you; force: true overrides only this); the file is a .gcode.3mf sliced for the configured model (X1C); " +
 			"every filament slot maps to a loaded AMS tray of the same material (chosen for you by material and nearest colour when ams_mapping is omitted); and the Spoolman spool in that tray has the grams needed. " +
-			"A spool short by up to 10% of the need only warns, as does one with under 10% to spare; short by more is refused. " +
-			"A tray with no linked spool is warned about, not blocked. Use dry_run to see the verdict without queuing. " +
+			"Other loaded trays with the same material, colour (exact or within a very small distance) and product line or vendor count as backups: the AMS switches to one by itself when the mapped spool runs out, so the mapped spool and its backups are added together against the need. " +
+			"If the mapped spool alone is short but the group covers it, the print is allowed with a warning naming the backup tray (the AMS has to switch over mid-print). " +
+			"A group short by up to 10% of the need only warns, as does one with under 10% to spare; short by more is refused. Backups with no linked spool add no grams. " +
+			"A tray with no linked spool is warned about, not blocked, and is never picked as the nearly empty one. Use dry_run to see the verdict, the tray groups it found and why it chose each tray, without queuing. " +
 			"After queuing it waits for the printer to actually leave IDLE or FINISH and reports its state; started is false, with the reason, if it never does. " +
 			"Tell the user what the printer was doing and any warnings. Starting a print is the user's decision: confirm the file, plate and filament mapping with them first.",
 		Annotations: writes(),
