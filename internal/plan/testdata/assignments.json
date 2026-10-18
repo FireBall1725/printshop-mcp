@@ -1,0 +1,18 @@
+[
+ {
+  "printer_id": 1,
+  "printer_name": "X1C",
+  "ams_id": 0,
+  "tray_id": 1,
+  "spoolman_spool_id": 9,
+  "ams_label": null
+ },
+ {
+  "printer_id": 1,
+  "printer_name": "X1C",
+  "ams_id": 0,
+  "tray_id": 3,
+  "spoolman_spool_id": 8,
+  "ams_label": null
+ }
+]

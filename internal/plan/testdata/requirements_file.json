@@ -1,0 +1,16 @@
+{
+ "file_id": 9,
+ "filename": "DeskControllerCaseV1.gcode.3mf",
+ "plate_id": 1,
+ "filaments": [
+  {
+   "slot_id": 1,
+   "type": "PLA",
+   "color": "#000000",
+   "used_grams": 78.6,
+   "used_meters": 24.76,
+   "tray_info_idx": "GFA01",
+   "used_in_plate": true
+  }
+ ]
+}

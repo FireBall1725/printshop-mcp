@@ -1,0 +1,17 @@
+name: CI
+
+# The jobs live in FireBall1725/workflows so every Go repo runs the same ones.
+# Change them there, not here.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: FireBall1725/workflows/.github/workflows/ci-go.yml@v1

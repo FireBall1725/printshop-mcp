@@ -1,0 +1,94 @@
+[
+ {
+  "id": 27,
+  "printer_id": 1,
+  "status": "completed",
+  "position": 1,
+  "archive_name": "pixelbar-mount-prototype-v4",
+  "library_file_name": null,
+  "library_file_id": null,
+  "plate_id": 1,
+  "ams_mapping": [
+   1
+  ],
+  "started_at": "2026-10-15T13:00:28.560209Z",
+  "completed_at": "2026-10-15T13:51:06.391899Z",
+  "created_at": "2026-10-15T13:00:16.320891Z",
+  "error_message": null,
+  "waiting_reason": null,
+  "print_time_seconds": 2837,
+  "filament_used_grams": 19.31,
+  "filament_type": "PLA",
+  "sliced_for_model": "X1C",
+  "printer_name": "X1C"
+ },
+ {
+  "id": 28,
+  "printer_id": 1,
+  "status": "completed",
+  "position": 1,
+  "archive_name": "pixelbar-mount-prototype-v5",
+  "library_file_name": null,
+  "library_file_id": null,
+  "plate_id": 1,
+  "ams_mapping": [
+   1
+  ],
+  "started_at": "2026-10-15T14:12:05.222499Z",
+  "completed_at": "2026-10-15T15:00:40.272117Z",
+  "created_at": "2026-10-15T14:11:52.138569Z",
+  "error_message": null,
+  "waiting_reason": null,
+  "print_time_seconds": 2793,
+  "filament_used_grams": 19.51,
+  "filament_type": "PLA",
+  "sliced_for_model": "X1C",
+  "printer_name": "X1C"
+ },
+ {
+  "id": 29,
+  "printer_id": 1,
+  "status": "completed",
+  "position": 1,
+  "archive_name": "pixelbar-mount-prototype-v6",
+  "library_file_name": "pixelbar-mount-prototype-v6.gcode.3mf",
+  "library_file_id": 14,
+  "plate_id": 1,
+  "ams_mapping": [
+   1
+  ],
+  "started_at": "2026-10-15T15:23:40.792075Z",
+  "completed_at": "2026-10-15T16:12:50.445418Z",
+  "created_at": "2026-10-15T15:23:24.162268Z",
+  "error_message": null,
+  "waiting_reason": null,
+  "print_time_seconds": 2822,
+  "filament_used_grams": 19.37,
+  "filament_type": "PLA",
+  "sliced_for_model": "X1C",
+  "printer_name": "X1C"
+ },
+ {
+  "id": 30,
+  "printer_id": 1,
+  "status": "printing",
+  "position": 1,
+  "archive_name": "pixelbar-mount-prototype-v7",
+  "library_file_name": "pixelbar-mount-prototype-v7.gcode.3mf",
+  "library_file_id": 15,
+  "plate_id": 1,
+  "ams_mapping": [
+   1
+  ],
+  "started_at": "2026-10-15T16:19:46.171282Z",
+  "completed_at": null,
+  "created_at": "2026-10-15T16:19:37.720477Z",
+  "error_message": null,
+  "waiting_reason": null,
+  "print_time_seconds": 2825,
+  "filament_used_grams": 19.45,
+  "filament_type": "PLA",
+  "sliced_for_model": "X1C",
+  "printer_name": "X1C"
+ }
+]

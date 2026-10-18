@@ -1,0 +1,36 @@
+[
+ {
+  "id": 4,
+  "project_id": 4,
+  "name": "M3x8 screws",
+  "quantity_needed": 8,
+  "quantity_acquired": 0,
+  "unit_price": 0.1,
+  "sourcing_url": "https://example.com/screws",
+  "archive_id": null,
+  "archive_name": null,
+  "stl_filename": null,
+  "remarks": "button head",
+  "sort_order": 1,
+  "is_complete": false,
+  "created_at": "2026-10-17T04:04:50.265325",
+  "updated_at": "2026-10-17T04:04:50.265325"
+ },
+ {
+  "id": 5,
+  "project_id": 4,
+  "name": "Mounting bracket",
+  "quantity_needed": 2,
+  "quantity_acquired": 2,
+  "unit_price": null,
+  "sourcing_url": null,
+  "archive_id": 20,
+  "archive_name": "pixelbar-mount-prototype-v6",
+  "stl_filename": null,
+  "remarks": null,
+  "sort_order": 2,
+  "is_complete": true,
+  "created_at": "2026-10-17T04:04:50.339074",
+  "updated_at": "2026-10-17T04:04:50.383815"
+ }
+]

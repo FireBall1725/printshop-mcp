@@ -1,0 +1,34 @@
+[
+ {
+  "id": 4,
+  "name": "PixelBar",
+  "description": "Wall mount and enclosure for the PixelBar",
+  "color": "#FF69B4",
+  "status": "active",
+  "target_count": 3,
+  "target_parts_count": 6,
+  "budget": 25.0,
+  "tags": "pixelbar,mount",
+  "due_date": "2026-11-30T00:00:00",
+  "priority": "high",
+  "created_at": "2026-10-17T04:04:49.980060",
+  "archive_count": 1,
+  "total_items": 1,
+  "completed_count": 1,
+  "failed_count": 0,
+  "queue_count": 0,
+  "progress_percent": 33.3,
+  "archives": [
+   {
+    "id": 20,
+    "print_name": "pixelbar-mount-prototype-v6",
+    "thumbnail_path": "archive/1/20261015_112340_pixelbar-mount-prototype-v6/thumbnail.png",
+    "status": "completed",
+    "filament_type": "PLA",
+    "filament_color": "#000000"
+   }
+  ],
+  "url": null,
+  "cover_image_filename": "cover_3b0c0d0351984827a2598d68e1b74c38.png"
+ }
+]

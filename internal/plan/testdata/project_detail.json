@@ -1,0 +1,57 @@
+{
+ "id": 4,
+ "name": "PixelBar",
+ "description": "Wall mount and enclosure for the PixelBar",
+ "color": "#FF69B4",
+ "status": "active",
+ "target_count": 3,
+ "target_parts_count": 6,
+ "notes": "v7 is the keeper",
+ "attachments": [
+  {
+   "filename": "8d28c3a7123840f4aca042b941e59e4e.txt",
+   "original_name": "mount-notes.txt",
+   "size": 9,
+   "uploaded_at": "2026-10-17T00:04:50.084275"
+  },
+  {
+   "filename": "75d1692a9b6e40ca82c2033661cd06e3.txt",
+   "original_name": "mount-notes.txt",
+   "size": 11,
+   "uploaded_at": "2026-10-17T00:04:50.141341"
+  }
+ ],
+ "tags": "pixelbar,mount",
+ "due_date": "2026-11-30T00:00:00",
+ "priority": "high",
+ "budget": 25.0,
+ "is_template": false,
+ "template_source_id": null,
+ "parent_id": null,
+ "parent_name": null,
+ "children": [],
+ "created_at": "2026-10-17T04:04:49.980060",
+ "updated_at": "2026-10-17T04:04:50.192194",
+ "stats": {
+  "total_archives": 1,
+  "total_items": 1,
+  "completed_prints": 1,
+  "failed_prints": 0,
+  "queued_prints": 0,
+  "in_progress_prints": 0,
+  "total_print_time_hours": 0.81,
+  "total_filament_grams": 19.37,
+  "progress_percent": 33.3,
+  "parts_progress_percent": 16.7,
+  "estimated_cost": 0.48,
+  "total_energy_kwh": 0.0,
+  "total_energy_cost": 0.0,
+  "remaining_prints": 2,
+  "remaining_parts": 5,
+  "bom_total_items": 2,
+  "bom_completed_items": 1,
+  "bom_cost": 0.8
+ },
+ "url": null,
+ "cover_image_filename": "cover_3b0c0d0351984827a2598d68e1b74c38.png"
+}

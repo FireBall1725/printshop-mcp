@@ -1,0 +1,16 @@
+# Go build output
+/printshop-mcp
+*.test
+*.out
+
+# Local env overrides
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS junk
+.DS_Store

@@ -1,0 +1,266 @@
+[
+ {
+  "id": 2,
+  "registered": "2026-08-01T15:03:04Z",
+  "first_used": "2026-08-02T01:52:13Z",
+  "last_used": "2026-08-05T02:06:48.338030Z",
+  "filament": {
+   "id": 1,
+   "registered": "2026-08-01T14:56:57Z",
+   "name": "Jade White",
+   "vendor": {
+    "id": 1,
+    "registered": "2026-08-01T14:56:57Z",
+    "name": "Bambu Lab",
+    "extra": {}
+   },
+   "material": "PLA",
+   "density": 1.24,
+   "diameter": 1.75,
+   "weight": 1000.0,
+   "color_hex": "FFFFFF",
+   "extra": {}
+  },
+  "remaining_weight": 394.89,
+  "initial_weight": 1000.0,
+  "used_weight": 605.11,
+  "remaining_length": 132400.14847148609,
+  "used_length": 202883.4709452783,
+  "comment": "Created by Bambuddy",
+  "archived": false,
+  "extra": {
+   "tag": "\"00000000000000000000000000000008\""
+  }
+ },
+ {
+  "id": 3,
+  "registered": "2026-08-01T15:03:04Z",
+  "first_used": "2026-08-03T16:48:56Z",
+  "last_used": "2026-08-05T01:33:18Z",
+  "filament": {
+   "id": 2,
+   "registered": "2026-08-01T14:56:58Z",
+   "name": "Black",
+   "vendor": {
+    "id": 1,
+    "registered": "2026-08-01T14:56:57Z",
+    "name": "Bambu Lab",
+    "extra": {}
+   },
+   "material": "PLA",
+   "density": 1.24,
+   "diameter": 1.75,
+   "weight": 1000.0,
+   "color_hex": "000000",
+   "extra": {}
+  },
+  "remaining_weight": 24.659999999999968,
+  "initial_weight": 1000.0,
+  "used_weight": 975.34,
+  "remaining_length": 8268.0940548174,
+  "used_length": 327015.525361947,
+  "comment": "Created by Bambuddy",
+  "archived": false,
+  "extra": {
+   "tag": "\"00000000000000000000000000000001\""
+  }
+ },
+ {
+  "id": 9,
+  "registered": "2026-09-26T19:03:31Z",
+  "first_used": "2026-09-26T21:01:05Z",
+  "last_used": "2026-10-15T15:00:40Z",
+  "filament": {
+   "id": 2,
+   "registered": "2026-08-01T14:56:58Z",
+   "name": "Black",
+   "vendor": {
+    "id": 1,
+    "registered": "2026-08-01T14:56:57Z",
+    "name": "Bambu Lab",
+    "extra": {}
+   },
+   "material": "PLA",
+   "density": 1.24,
+   "diameter": 1.75,
+   "weight": 1000.0,
+   "color_hex": "000000",
+   "extra": {}
+  },
+  "remaining_weight": 765.0,
+  "initial_weight": 1000.0,
+  "used_weight": 235.0,
+  "remaining_length": 256491.96885382477,
+  "used_length": 78791.65056293964,
+  "comment": "Created by Bambuddy",
+  "archived": false,
+  "extra": {
+   "tag": "\"00000000000000000000000000000004\""
+  }
+ },
+ {
+  "id": 4,
+  "registered": "2026-08-01T15:03:04Z",
+  "first_used": "2026-08-03T20:47:01Z",
+  "last_used": "2026-09-26T22:48:54Z",
+  "filament": {
+   "id": 3,
+   "registered": "2026-08-01T14:56:58Z",
+   "name": "Mistletoe Green",
+   "vendor": {
+    "id": 1,
+    "registered": "2026-08-01T14:56:57Z",
+    "name": "Bambu Lab",
+    "extra": {}
+   },
+   "material": "PLA",
+   "density": 1.24,
+   "diameter": 1.75,
+   "weight": 1000.0,
+   "color_hex": "3F8E43",
+   "extra": {}
+  },
+  "remaining_weight": 637.14,
+  "initial_weight": 1000.0,
+  "used_weight": 362.86,
+  "remaining_length": 213622.6052751973,
+  "used_length": 121661.01414156712,
+  "comment": "Created by Bambuddy",
+  "archived": false,
+  "extra": {
+   "tag": "\"00000000000000000000000000000006\""
+  }
+ },
+ {
+  "id": 5,
+  "registered": "2026-08-04T13:21:20Z",
+  "first_used": "2026-08-04T14:39:11Z",
+  "last_used": "2026-08-04T14:39:11Z",
+  "filament": {
+   "id": 4,
+   "registered": "2026-08-04T13:21:20Z",
+   "name": "Matte Scarlet Red",
+   "vendor": {
+    "id": 1,
+    "registered": "2026-08-01T14:56:57Z",
+    "name": "Bambu Lab",
+    "extra": {}
+   },
+   "material": "PLA",
+   "density": 1.31,
+   "diameter": 1.75,
+   "weight": 1000.0,
+   "color_hex": "DE4343",
+   "extra": {}
+  },
+  "remaining_weight": 958.93,
+  "initial_weight": 1000.0,
+  "used_weight": 41.07,
+  "remaining_length": 304333.4093492169,
+  "used_length": 13034.291472758532,
+  "comment": "Created by Bambuddy",
+  "archived": false,
+  "extra": {
+   "tag": "\"00000000000000000000000000000002\""
+  }
+ },
+ {
+  "id": 6,
+  "registered": "2026-08-04T15:25:27Z",
+  "first_used": "2026-08-04T16:41:35Z",
+  "last_used": "2026-08-04T16:41:35Z",
+  "filament": {
+   "id": 5,
+   "registered": "2026-08-04T15:25:27Z",
+   "name": "Cyan",
+   "vendor": {
+    "id": 1,
+    "registered": "2026-08-01T14:56:57Z",
+    "name": "Bambu Lab",
+    "extra": {}
+   },
+   "material": "PLA",
+   "density": 1.24,
+   "diameter": 1.75,
+   "weight": 1000.0,
+   "color_hex": "0086D6",
+   "extra": {}
+  },
+  "remaining_weight": 958.93,
+  "initial_weight": 1000.0,
+  "used_weight": 41.07,
+  "remaining_length": 321513.5211673179,
+  "used_length": 13770.098249446515,
+  "comment": "Created by Bambuddy",
+  "archived": false,
+  "extra": {
+   "tag": "\"00000000000000000000000000000007\""
+  }
+ },
+ {
+  "id": 7,
+  "registered": "2026-08-04T17:06:20Z",
+  "first_used": "2026-08-04T18:46:47Z",
+  "last_used": "2026-08-04T18:46:47Z",
+  "filament": {
+   "id": 6,
+   "registered": "2026-08-04T17:06:20Z",
+   "name": "PLA Basic",
+   "vendor": {
+    "id": 1,
+    "registered": "2026-08-01T14:56:57Z",
+    "name": "Bambu Lab",
+    "extra": {}
+   },
+   "material": "PLA",
+   "density": 1.24,
+   "diameter": 1.75,
+   "weight": 1000.0,
+   "color_hex": "4C5F71",
+   "extra": {}
+  },
+  "remaining_weight": 958.93,
+  "initial_weight": 1000.0,
+  "used_weight": 41.07,
+  "remaining_length": 321513.5211673179,
+  "used_length": 13770.098249446515,
+  "comment": "Created by Bambuddy",
+  "archived": false,
+  "extra": {
+   "tag": "\"00000000000000000000000000000003\""
+  }
+ },
+ {
+  "id": 8,
+  "registered": "2026-08-05T02:09:06Z",
+  "first_used": "2026-08-05T03:20:58Z",
+  "last_used": "2026-10-15T14:52:55.118011Z",
+  "filament": {
+   "id": 7,
+   "registered": "2026-08-05T02:09:06Z",
+   "name": "Magenta",
+   "vendor": {
+    "id": 1,
+    "registered": "2026-08-01T14:56:57Z",
+    "name": "Bambu Lab",
+    "extra": {}
+   },
+   "material": "PLA",
+   "density": 1.24,
+   "diameter": 1.75,
+   "weight": 1000.0,
+   "color_hex": "EC008C",
+   "extra": {}
+  },
+  "remaining_weight": 959.53,
+  "initial_weight": 1000.0,
+  "used_weight": 40.47,
+  "remaining_length": 321714.69133896794,
+  "used_length": 13568.928077796454,
+  "comment": "Created by Bambuddy",
+  "archived": false,
+  "extra": {
+   "tag": "\"00000000000000000000000000000005\""
+  }
+ }
+]

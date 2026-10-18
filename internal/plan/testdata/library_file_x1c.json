@@ -1,0 +1,52 @@
+{
+ "id": 9,
+ "folder_id": null,
+ "folder_name": null,
+ "project_id": null,
+ "project_name": null,
+ "is_external": false,
+ "filename": "DeskControllerCaseV1.gcode.3mf",
+ "file_path": "archive/library/files/4e4e632a5cc541809da0b2d6e8444796.3mf",
+ "file_type": "gcode.3mf",
+ "file_size": 2955937,
+ "file_hash": "a9dd2b7c3f2609c444bf5297e9f77a55761b447384baea369f1262dec7191008",
+ "thumbnail_path": "archive/library/thumbnails/3d5c55fd045c486fbb9317ffd5977312.png",
+ "metadata": {
+  "sliced_for_model": "X1C",
+  "printable_objects": {
+   "72": "mount-body.stl"
+  },
+  "print_time_seconds": 11011,
+  "filament_used_grams": 78.62,
+  "filament_slots": [
+   {
+    "slot_id": 1,
+    "used_g": 78.62,
+    "type": "PLA",
+    "color": "#000000"
+   }
+  ],
+  "filament_type": "PLA",
+  "filament_color": "#000000",
+  "layer_height": 0.16,
+  "nozzle_diameter": 0.4,
+  "nozzle_temperature": 220,
+  "bed_type": "Textured PEI Plate",
+  "total_layers": 351,
+  "filament_used_mm": 24762.78,
+  "designer": ""
+ },
+ "print_count": 0,
+ "last_printed_at": null,
+ "notes": null,
+ "duplicates": null,
+ "duplicate_count": 0,
+ "created_by_id": null,
+ "created_by_username": null,
+ "created_at": "2026-09-30T13:28:43.873420",
+ "updated_at": "2026-09-30T13:28:43.873420",
+ "print_name": null,
+ "print_time_seconds": 11011,
+ "filament_used_grams": 78.62,
+ "sliced_for_model": "X1C"
+}

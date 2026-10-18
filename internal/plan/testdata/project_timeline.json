@@ -1,0 +1,20 @@
+[
+ {
+  "event_type": "project_created",
+  "timestamp": "2026-10-17T04:04:49.980060",
+  "title": "Project created",
+  "description": "Project 'PixelBar' was created",
+  "metadata": null
+ },
+ {
+  "event_type": "print_completed",
+  "timestamp": "2026-10-15T16:12:50.585559",
+  "title": "Print completed",
+  "description": "pixelbar-mount-prototype-v6",
+  "metadata": {
+   "archive_id": 20,
+   "print_time_hours": 0.78,
+   "filament_grams": 19.4
+  }
+ }
+]
