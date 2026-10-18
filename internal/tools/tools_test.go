@@ -33,6 +33,8 @@ type fake struct {
 	spools, filaments, vendors map[int]map[string]any
 	smWrites, smBodies         []string
 	dropTagOnPatch             bool
+	needG                      float64
+	unassignedTray             map[int]bool
 	hold                       bool
 	hmsSrv                     *httptest.Server
 	mu                         sync.Mutex
@@ -96,9 +98,18 @@ func newFake(t *testing.T) *fake {
 		case r.URL.Path == "/api/v1/library/files/9":
 			write(w, file)
 		case r.URL.Path == "/api/v1/library/files/9/filament-requirements":
+			if f.needG > 0 {
+				reqs.(map[string]any)["filaments"].([]any)[0].(map[string]any)["used_grams"] = f.needG
+			}
 			write(w, reqs)
 		case r.URL.Path == "/api/v1/spoolman/inventory/slot-assignments/all":
-			write(w, assigns)
+			var kept []any
+			for _, a := range assigns.([]any) {
+				if !f.unassignedTray[int(a.(map[string]any)["tray_id"].(float64))] {
+					kept = append(kept, a)
+				}
+			}
+			write(w, kept)
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/queue/":
 			write(w, extra["queue_items.json"])
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/queue/77":
@@ -875,5 +886,138 @@ func TestSpoolListsShowTagAndSlot(t *testing.T) {
 	}
 	if call(t, cs, "get_spool", map[string]any{"spool_id": 2})["tag_set"] != false {
 		t.Fatal("get_spool must show false too")
+	}
+}
+
+// ─── same-filament backup trays ──────────────────────────────────────────────
+
+// twinTrays makes AMS slot 3 a second tray of the same black PLA Matte as
+// slot 1, with the given grams on the spools linked to each, and sets the
+// file's need.
+func twinTrays(f *fake, slot1G, slot3G, needG float64) {
+	tray := f.status["ams"].([]any)[0].(map[string]any)["tray"].([]any)
+	tray[3].(map[string]any)["tray_color"] = "000000FF"
+	tray[3].(map[string]any)["tray_sub_brands"] = "PLA Matte"
+	f.spools[9]["remaining_weight"] = slot1G
+	f.spools[8]["remaining_weight"] = slot3G
+	f.needG = needG
+}
+
+func TestPrintFileUsesABackupTrayOfTheSameFilament(t *testing.T) {
+	tests := []struct {
+		name             string
+		args             map[string]any
+		slot1G, slot3G   float64
+		needG            float64
+		wantAllowed      bool
+		wantMapping      string
+		wantWarn, wantNo string
+	}{
+		{"explicit mapping, 127 g plus 854 g for 146 g", map[string]any{"ams_mapping": []int{1}}, 127, 854, 146, true, "[1]", "AMS slot 3 (spool #8, 854 g)", ""},
+		{"default mapping picks the 127 g tray", nil, 127, 854, 146, true, "[1]", "switch over", ""},
+		{"default mapping picks the nearly empty tray even in the higher slot", nil, 854, 127, 146, true, "[3]", "AMS slot 1 (spool #9, 854 g)", ""},
+		{"group total short is refused", map[string]any{"ams_mapping": []int{1}}, 50, 60, 146, false, "[1]", "", "have 110 g between them but filament slot 1 needs 146 g"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newFake(t)
+			f.setState("FINISH", false)
+			twinTrays(f, tc.slot1G, tc.slot3G, tc.needG)
+			cs := session(t, f)
+			args := map[string]any{"library_file_id": 9, "dry_run": true}
+			for k, v := range tc.args {
+				args[k] = v
+			}
+			out := call(t, cs, "print_file", args)
+			pf := out["preflight"].(map[string]any)
+			if pf["allowed"] != tc.wantAllowed || fmt.Sprint(pf["ams_mapping"]) != tc.wantMapping {
+				t.Fatalf("%v", out)
+			}
+			text := fmt.Sprint(pf["warnings"], pf["refusals"])
+			if !strings.Contains(text, tc.wantWarn) || (tc.wantNo != "" && !strings.Contains(text, tc.wantNo)) {
+				t.Fatalf("want %q / %q in %s", tc.wantWarn, tc.wantNo, text)
+			}
+			if tc.wantAllowed {
+				groups, _ := pf["groups"].([]any)
+				if len(groups) != 1 || fmt.Sprint(groups[0].(map[string]any)["ams_slots"]) != "[1 3]" {
+					t.Fatalf("dry run should show the group it found: %v", pf["groups"])
+				}
+			}
+			if f.writeCount() != 0 {
+				t.Fatalf("dry run wrote: %v", f.writes)
+			}
+		})
+	}
+}
+
+func TestPrintFileDryRunSaysWhyItChoseATray(t *testing.T) {
+	f := newFake(t)
+	f.setState("FINISH", false)
+	twinTrays(f, 127, 854, 146)
+	cs := session(t, f)
+	pf := call(t, cs, "print_file", map[string]any{"library_file_id": 9, "dry_run": true})["preflight"].(map[string]any)
+	why := fmt.Sprint(pf["mapping_reasons"])
+	for _, want := range []string{"AMS slots 1, 3 match equally", "least filament left (127 g)", "group of 2 trays holds 981 g"} {
+		if !strings.Contains(why, want) {
+			t.Errorf("mapping_reasons missing %q: %s", want, why)
+		}
+	}
+}
+
+func TestPrintFileDoesNotCountADifferentColourTray(t *testing.T) {
+	f := newFake(t)
+	f.setState("FINISH", false)
+	twinTrays(f, 127, 854, 146)
+	f.status["ams"].([]any)[0].(map[string]any)["tray"].([]any)[3].(map[string]any)["tray_color"] = "EC008CFF"
+	cs := session(t, f)
+	out := call(t, cs, "print_file", map[string]any{"library_file_id": 9, "ams_mapping": []int{1}, "dry_run": true})
+	pf := out["preflight"].(map[string]any)
+	if pf["allowed"] != false || !strings.Contains(fmt.Sprint(pf["refusals"]), "has 127 g but filament slot 1 needs 146 g") || pf["groups"] != nil {
+		t.Fatalf("a magenta tray is not a backup for black: %v", out)
+	}
+}
+
+func TestPrintFileNeverCountsAnUnlinkedTrayAsTheNearlyEmptyOne(t *testing.T) {
+	tests := []struct {
+		name           string
+		slot1G, slot3G float64
+		args           map[string]any
+		wantAllowed    bool
+		wantMapping    string
+		wantText       string
+		wantNot        string
+	}{
+		// Slot 3 reads 5% on the AMS but has no spool, so it is not the nearly empty one.
+		{"default mapping keeps to the linked tray", 854, 127, nil, true, "[1]", "", "least filament left (127 g)"},
+		// An unlinked backup adds no grams, so 127 g alone cannot cover 146 g.
+		{"unlinked backup adds nothing", 127, 854, map[string]any{"ams_mapping": []int{1}}, false, "[1]", "AMS slot 3 has no linked spool, so its grams are not counted", ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newFake(t)
+			f.setState("FINISH", false)
+			twinTrays(f, tc.slot1G, tc.slot3G, 146)
+			f.unassignedTray = map[int]bool{3: true}
+			f.spools[8]["extra"] = map[string]any{}
+			tray := f.status["ams"].([]any)[0].(map[string]any)["tray"].([]any)[3].(map[string]any)
+			tray["remain"] = 5
+			cs := session(t, f)
+			args := map[string]any{"library_file_id": 9, "dry_run": true}
+			for k, v := range tc.args {
+				args[k] = v
+			}
+			out := call(t, cs, "print_file", args)
+			pf := out["preflight"].(map[string]any)
+			if pf["allowed"] != tc.wantAllowed || fmt.Sprint(pf["ams_mapping"]) != tc.wantMapping {
+				t.Fatalf("%v", out)
+			}
+			text := fmt.Sprint(pf["warnings"], pf["refusals"], pf["mapping_reasons"])
+			if tc.wantText != "" && !strings.Contains(text, tc.wantText) {
+				t.Fatalf("want %q in %s", tc.wantText, text)
+			}
+			if tc.wantNot != "" && strings.Contains(text, tc.wantNot) {
+				t.Fatalf("did not want %q in %s", tc.wantNot, text)
+			}
+		})
 	}
 }

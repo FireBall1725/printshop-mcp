@@ -41,6 +41,11 @@ type SlotCheck struct {
 	SpoolID     int     `json:"spool_id,omitempty"`
 	RemainingG  float64 `json:"remaining_g,omitempty"`
 	LeftAfterG  float64 `json:"left_after_g,omitempty"`
+	// BackupSlots are the other loaded trays with the same filament, and
+	// GroupRemainingG is what the whole group has left. Both are empty when the
+	// tray has no backup.
+	BackupSlots     []int   `json:"backup_slots,omitempty"`
+	GroupRemainingG float64 `json:"group_remaining_g,omitempty"`
 }
 
 // PreflightResult says whether a print may start and why not.
@@ -57,6 +62,10 @@ type PreflightResult struct {
 	// file's material and colour against the loaded trays.
 	AMSMapping    []int  `json:"ams_mapping,omitempty"`
 	MappingSource string `json:"mapping_source,omitempty"`
+	// MappingReasons says why each tray was chosen when the mapping is "auto".
+	MappingReasons []string `json:"mapping_reasons,omitempty"`
+	// Groups lists the mapped trays that have a same-filament backup tray.
+	Groups []TrayGroup `json:"groups,omitempty"`
 }
 
 // shortfallTolerance is the share of a slot's grams a spool may be short, or
@@ -151,7 +160,7 @@ func checkFilament(r *PreflightResult, in PreflightInput, refuse, warn func(stri
 	r.MappingSource = "explicit"
 	if len(mapping) == 0 {
 		var unmatched []Need
-		mapping, unmatched = autoMap(in.Needs, trays, in.Lookup)
+		mapping, unmatched, r.MappingReasons = autoMapExplained(in.Needs, trays, in.Lookup)
 		r.MappingSource = "auto"
 		for _, n := range unmatched {
 			refuse("no loaded AMS tray holds %s for filament slot %d (#%s, %.0f g); load it or pass ams_mapping", n.Type, n.SlotID, NormHex(n.Color), n.Grams)
@@ -161,9 +170,11 @@ func checkFilament(r *PreflightResult, in PreflightInput, refuse, warn func(stri
 		}
 	}
 	r.AMSMapping = mapping
+	r.Groups = groupsOf(mapping, trays, in.Lookup)
 
-	// A tray feeding two filaments is drawn on twice, so grams add up per spool.
-	committed := map[int]float64{}
+	// A tray feeding two filaments is drawn on twice, and so is its group of
+	// same-filament trays, so grams add up per group (keyed by its first slot).
+	demand := map[int]float64{}
 	for _, n := range in.Needs {
 		if n.SlotID < 1 || n.SlotID > len(mapping) {
 			refuse("ams_mapping has no entry for filament slot %d", n.SlotID)
@@ -192,21 +203,48 @@ func checkFilament(r *PreflightResult, in PreflightInput, refuse, warn func(stri
 			r.Slots = append(r.Slots, sc)
 			continue
 		}
-		committed[spool.ID] += n.Grams
-		need := committed[spool.ID]
+		g := groupOf(slot, trays, in.Lookup)
+		demand[g.Slots[0]] += n.Grams
+		need := demand[g.Slots[0]]
 		sc.SpoolID, sc.RemainingG = spool.ID, spool.RemainingG
-		sc.LeftAfterG = round1(spool.RemainingG - need)
-		short := need - spool.RemainingG
+		sc.LeftAfterG = round1(g.TotalG - need)
+		var backups []string
+		for _, s := range g.Slots {
+			if s == slot {
+				continue
+			}
+			sc.BackupSlots = append(sc.BackupSlots, s)
+			bt := trays[s]
+			if bs, _, ok := in.Lookup.For(bt.amsID, bt.tray); ok {
+				backups = append(backups, fmt.Sprintf("AMS slot %d (spool #%d, %.0f g)", s, bs.ID, bs.RemainingG))
+			}
+		}
+		if len(sc.BackupSlots) > 0 {
+			sc.GroupRemainingG = g.TotalG
+		}
+		short := need - g.TotalG
 		switch {
+		case short > need*shortfallTolerance && len(backups) == 0:
+			refuse("spool #%d (%s %s) has %.0f g but filament slot %d needs %.0f g%s", spool.ID, spool.Vendor, spool.Name, spool.RemainingG, n.SlotID, need, unlinkedNote(g))
 		case short > need*shortfallTolerance:
-			refuse("spool #%d (%s %s) has %.0f g but filament slot %d needs %.0f g", spool.ID, spool.Vendor, spool.Name, spool.RemainingG, n.SlotID, need)
+			refuse("spool #%d (%s %s) and its backup tray(s) at AMS slot %s have %.0f g between them but filament slot %d needs %.0f g%s", spool.ID, spool.Vendor, spool.Name, slotList(g.Slots), g.TotalG, n.SlotID, need, unlinkedNote(g))
 		case short > 0:
-			warn("spool #%d has %.0f g and slot %d needs %.0f g; short by %.0f g, within 10%%, so it may run out near the end", spool.ID, spool.RemainingG, n.SlotID, need, short)
-		case spool.RemainingG-need < need*shortfallTolerance:
-			warn("spool #%d has %.0f g and slot %d needs %.0f g; only %.0f g to spare", spool.ID, spool.RemainingG, n.SlotID, need, spool.RemainingG-need)
+			warn("spool #%d has %.0f g and slot %d needs %.0f g; short by %.0f g, within 10%%, so it may run out near the end", spool.ID, g.TotalG, n.SlotID, need, short)
+		case spool.RemainingG < need && len(backups) > 0:
+			warn("spool #%d has %.0f g but filament slot %d needs %.0f g; %s holds the same filament, so the AMS has to switch over to it mid-print", spool.ID, spool.RemainingG, n.SlotID, need, strings.Join(backups, " and "))
+		case g.TotalG-need < need*shortfallTolerance:
+			warn("spool #%d has %.0f g and slot %d needs %.0f g; only %.0f g to spare", spool.ID, g.TotalG, n.SlotID, need, g.TotalG-need)
 		}
 		r.Slots = append(r.Slots, sc)
 	}
+}
+
+// unlinkedNote says which trays in a group add no grams to its total.
+func unlinkedNote(g TrayGroup) string {
+	if len(g.UnlinkedSlots) == 0 {
+		return ""
+	}
+	return fmt.Sprintf(" (AMS slot %s has no linked spool, so its grams are not counted)", slotList(g.UnlinkedSlots))
 }
 
 func overrideHint(source string) string {
@@ -235,12 +273,21 @@ func loadedTrays(st api.PrinterStatus) map[int]loadedTray {
 
 // autoMap picks an AMS slot for each filament: loaded trays of the same
 // material only, nearest colour first. Colours within a few ΔE of each other
-// count as equal, and then a tray whose linked spool has the grams wins, then
-// one not already used, then the spool with more filament, then the lower
-// slot. Biggest filaments choose first. The mapping has -1 for file slots
+// count as equal, and then a tray whose group of same-filament trays has the
+// grams wins, then one not already used, then the tray with the least filament
+// left (so a nearly empty spool is used up before the AMS moves on to its
+// backup), then the lower slot. A tray with no linked spool never counts as
+// the nearly empty one; it ranks after the linked trays, by the AMS remaining
+// percent. Biggest filaments choose first. The mapping has -1 for file slots
 // that need nothing. Needs with no loaded tray of their material come back
 // unmatched.
 func autoMap(needs []Need, trays map[int]loadedTray, lookup *SpoolLookup) (mapping []int, unmatched []Need) {
+	mapping, unmatched, _ = autoMapExplained(needs, trays, lookup)
+	return mapping, unmatched
+}
+
+// autoMapExplained is autoMap plus a line for each chosen tray saying why.
+func autoMapExplained(needs []Need, trays map[int]loadedTray, lookup *SpoolLookup) (mapping []int, unmatched []Need, reasons []string) {
 	top := 0
 	for _, n := range needs {
 		if n.SlotID > top {
@@ -256,11 +303,16 @@ func autoMap(needs []Need, trays map[int]loadedTray, lookup *SpoolLookup) (mappi
 	used := map[int]bool{}
 	for _, n := range order {
 		type cand struct {
-			slot  int
-			key   float64
-			short bool
-			used  bool
-			rem   float64
+			slot     int
+			key      float64
+			delta    float64
+			short    bool
+			used     bool
+			linked   bool
+			rem      float64
+			pct      float64 // AMS remaining percent; -1 when unknown
+			groupTot float64
+			nBackup  int
 		}
 		var cs []cand
 		for slot, t := range trays {
@@ -271,12 +323,16 @@ func autoMap(needs []Need, trays map[int]loadedTray, lookup *SpoolLookup) (mappi
 			if !ok {
 				d = 500
 			}
+			c := cand{slot: slot, key: d, delta: d, used: used[slot], pct: -1}
 			if d <= 5 {
-				d = 0
+				c.key = 0
 			}
-			c := cand{slot: slot, key: d, used: used[slot]}
+			g := groupOf(slot, trays, lookup)
+			c.groupTot, c.nBackup, c.short = g.TotalG, len(g.Slots)-1, g.TotalG < n.Grams
 			if sp, _, linked := lookup.For(t.amsID, t.tray); linked {
-				c.rem, c.short = sp.RemainingG, sp.RemainingG < n.Grams
+				c.linked, c.rem = true, sp.RemainingG
+			} else if t.tray.Remain >= 0 {
+				c.pct = float64(t.tray.Remain)
 			}
 			cs = append(cs, c)
 		}
@@ -293,16 +349,47 @@ func autoMap(needs []Need, trays map[int]loadedTray, lookup *SpoolLookup) (mappi
 				return !a.short
 			case a.used != b.used:
 				return !a.used
-			case a.rem != b.rem:
-				return a.rem > b.rem
+			case a.linked != b.linked:
+				return a.linked
+			case a.linked && a.rem != b.rem:
+				return a.rem < b.rem
+			case !a.linked && a.pct != b.pct:
+				// Unknown (-1) goes last.
+				return b.pct < 0 || (a.pct >= 0 && a.pct < b.pct)
 			}
 			return a.slot < b.slot
 		})
-		mapping[n.SlotID-1] = cs[0].slot
-		used[cs[0].slot] = true
+		best := cs[0]
+		mapping[n.SlotID-1] = best.slot
+		used[best.slot] = true
+
+		var tied, unlinkedTied []int
+		for _, c := range cs {
+			if c.key == best.key && c.short == best.short && c.used == best.used {
+				tied = append(tied, c.slot)
+				if !c.linked {
+					unlinkedTied = append(unlinkedTied, c.slot)
+				}
+			}
+		}
+		sort.Ints(tied)
+		sort.Ints(unlinkedTied)
+		why := fmt.Sprintf("filament slot %d (%s #%s, %.0f g): AMS slot %d, colour %s (ΔE %.0f)", n.SlotID, n.Type, NormHex(n.Color), n.Grams, best.slot, ColourClass(best.delta, best.delta < 500), best.delta)
+		switch {
+		case len(tied) > 1 && best.linked && len(unlinkedTied) > 0:
+			why += fmt.Sprintf("; AMS slots %s match equally but AMS slot %s has no linked spool, so only linked trays were compared", slotList(tied), slotList(unlinkedTied))
+		case len(tied) > 1 && best.linked:
+			why += fmt.Sprintf("; AMS slots %s match equally, chose the one with the least filament left (%.0f g)", slotList(tied), best.rem)
+		case len(tied) > 1:
+			why += fmt.Sprintf("; AMS slots %s match equally and none has a linked spool, so the AMS remaining percent decided", slotList(tied))
+		}
+		if best.nBackup > 0 {
+			why += fmt.Sprintf("; its group of %d trays holds %.0f g", best.nBackup+1, best.groupTot)
+		}
+		reasons = append(reasons, why)
 	}
 	sort.SliceStable(unmatched, func(i, j int) bool { return unmatched[i].SlotID < unmatched[j].SlotID })
-	return mapping, unmatched
+	return mapping, unmatched, reasons
 }
 
 // Doing describes what the printer is up to, for the result text.
